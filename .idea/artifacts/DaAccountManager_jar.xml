@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="DaAccountManager:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/DaAccountManager_jar</output-path>
+    <root id="archive" name="DaAccountManager.jar">
+      <element id="module-output" name="DaAccountManager" />
+    </root>
+  </artifact>
+</component>
