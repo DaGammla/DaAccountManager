@@ -4,6 +4,8 @@ import da.gammla.anchored_table.AnchoredTable;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileSystemView;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.io.*;
 
 public class Main {
@@ -41,9 +43,7 @@ public class Main {
             if (settings.hasAnchor("pass_p")){
                 boolean wrong_password = true;
                 while (wrong_password){
-                    JFrame frame = optionPaneFrame();
-                    String answer = JOptionPane.showInputDialog(frame, "Enter your Password", "Da Accounts Manager", JOptionPane.QUESTION_MESSAGE);
-                    frame.dispose();
+                    String answer = getPassword();
                     if (answer == null)
                         System.exit(0);
 
@@ -72,9 +72,7 @@ public class Main {
                 boolean wrong_password = true;
                 while (wrong_password) {
                     try {
-                        JFrame frame = optionPaneFrame();
-                        String answer = JOptionPane.showInputDialog(frame, "Enter your Password", "Da Accounts Manager", JOptionPane.QUESTION_MESSAGE);
-                        frame.dispose();
+                        String answer = getPassword();
                         if (answer == null)
                             System.exit(0);
                         byte[] bytes = Encryptor.decryptFile(file_enc.getAbsolutePath(), answer);
@@ -112,5 +110,43 @@ public class Main {
         frame.setUndecorated(true);
         frame.setVisible(true);
         return frame;
+    }
+
+    static String getPassword(){
+        JFrame frame = optionPaneFrame();
+        JPasswordField pass = new JPasswordField(){
+            @Override
+            public void addNotify() {
+                super.addNotify();
+                Thread thread = new Thread(){
+                    @Override
+                    public void run() {
+                        super.run();
+                        try {
+                            Thread.sleep(50);
+                            requestFocusInWindow();
+                            Thread.sleep(100);
+                            requestFocusInWindow();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                };
+                thread.start();
+            }
+        };
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JLabel label = new JLabel("Enter your password:");
+        panel.add(label);
+        panel.add(pass);
+        int option = JOptionPane.showConfirmDialog(frame, panel, "Da Accounts Manager", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+        if(option == JOptionPane.OK_OPTION) {
+            String password = new String(pass.getPassword());
+            frame.dispose();
+            return password;
+        }
+        return null;
     }
 }
