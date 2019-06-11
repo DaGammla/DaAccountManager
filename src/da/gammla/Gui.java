@@ -295,7 +295,8 @@ public class Gui extends JFrame {
                     @Override
                     public void run() {
                         try {
-                            Socket socket = new Socket("" + ip_address_field.getText(), 7679);
+                            Socket socket = new Socket();
+                            socket.connect(new InetSocketAddress( ip_address_field.getText(), 7679), 1500);
 
                             ObjectOutputStream dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
 
