@@ -106,12 +106,12 @@ public class Gui extends JFrame {
                     int select_index = selection_box.getSelectedIndex();
                     if (select_index > 0) {
                         accounts.contents.set(selection_box.getSelectedIndex() - 1,
-                                new Account(platform_field.getText(), email_field.getText(), username_field.getText(), password_field.getText()));
+                                new Account(platform_field.getText(), email_field.getText(), username_field.getText(), new String(password_field.getPassword())));
                         applyAccountsToSelectionBox();
                         endEditing();
                         selection_box.setSelectedIndex(select_index);
                     } else {
-                        accounts.contents.add(new Account(platform_field.getText(), email_field.getText(), username_field.getText(), password_field.getText()));
+                        accounts.contents.add(new Account(platform_field.getText(), email_field.getText(), username_field.getText(), new String(password_field.getPassword())));
                         applyAccountsToSelectionBox();
                         endEditing();
                         selection_box.setSelectedIndex(accounts.contents.size());
@@ -179,7 +179,7 @@ public class Gui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                StringSelection stringSelection = new StringSelection(password_field.getText());
+                StringSelection stringSelection = new StringSelection(new String(password_field.getPassword()));
                 clipboard.setContents(stringSelection, null);
             }
         });
@@ -460,7 +460,6 @@ public class Gui extends JFrame {
         }
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file))) {
             out.writeObject(accounts);
-            out.close();
         } catch (FileNotFoundException e1) {
             e1.printStackTrace();
         } catch (IOException e1) {
@@ -481,7 +480,7 @@ public class Gui extends JFrame {
             Encryptor.encryptFile(
                     FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "/DaGammla/AccountManager/save.dams",
                     FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "/DaGammla/AccountManager/enc_save.des",
-                    options_password_field.getText());
+                    new String(options_password_field.getPassword()));
             File file = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "/DaGammla/AccountManager/save.dams");
             if (file.exists()) {
                 Files.delete(file.toPath());
@@ -580,7 +579,7 @@ public class Gui extends JFrame {
                 }
             }
             if (use_password_box.isSelected() && !encrypt_save_box.isSelected()) {
-                settings.setData("pass_p", options_password_field.getText());
+                settings.setData("pass_p", new String(options_password_field.getPassword()));
             }
 
             settings.saveToXML(FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "/DaGammla/AccountManager/settings.xml");
