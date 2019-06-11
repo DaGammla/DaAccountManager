@@ -11,6 +11,7 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.io.*;
+import java.net.*;
 import java.nio.file.Files;
 import java.util.Random;
 
@@ -20,7 +21,7 @@ public class Gui extends JFrame {
     private JTextField platform_field;
     private JTextField email_field;
     private JTextField username_field;
-    private JTextField password_field;
+    private JPasswordField password_field;
     private JButton edit_button;
     private JButton delete_button;
     private JComboBox selection_box;
@@ -39,14 +40,22 @@ public class Gui extends JFrame {
     private JTextField random_password_field;
     private JButton save_password_button;
     private JCheckBox use_password_box;
-    private JTextField options_password_field;
+    private JPasswordField options_password_field;
     private JCheckBox encrypt_save_box;
     private JComboBox skin_box;
+    private JLabel ip_address_label;
+    private JButton receive_button;
+    private JTextField ip_address_field;
+    private JButton deliver_button;
+    private JCheckBox show_account_password_box;
+    private JCheckBox show_options_password_box;
 
     private boolean editing = false;
+    private boolean receiving = false;
 
     AccountsCluster accounts;
     AnchoredTable settings;
+    ServerSocket ser_socket;
 
     Gui self = this;
 
@@ -61,6 +70,9 @@ public class Gui extends JFrame {
         for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
             skin_box.addItem(info.getName());
         }
+
+        options_password_field.setEchoChar('•');
+        password_field.setEchoChar('•');
         loadFromSettings();
 
         selection_box.addActionListener(new ActionListener() {
@@ -74,7 +86,7 @@ public class Gui extends JFrame {
                     edit_button.setEnabled(editing);
                     delete_button.setEnabled(editing);
                 } else {
-                    Account acc = accounts.get(selection_box.getSelectedIndex() - 1);
+                    Account acc = accounts.contents.get(selection_box.getSelectedIndex() - 1);
                     platform_field.setText(acc.getPlatform());
                     email_field.setText(acc.getEmail());
                     username_field.setText(acc.getUsername());
@@ -93,16 +105,16 @@ public class Gui extends JFrame {
                 } else {
                     int select_index = selection_box.getSelectedIndex();
                     if (select_index > 0) {
-                        accounts.set(selection_box.getSelectedIndex() - 1,
+                        accounts.contents.set(selection_box.getSelectedIndex() - 1,
                                 new Account(platform_field.getText(), email_field.getText(), username_field.getText(), password_field.getText()));
                         applyAccountsToSelectionBox();
                         endEditing();
                         selection_box.setSelectedIndex(select_index);
                     } else {
-                        accounts.add(new Account(platform_field.getText(), email_field.getText(), username_field.getText(), password_field.getText()));
+                        accounts.contents.add(new Account(platform_field.getText(), email_field.getText(), username_field.getText(), password_field.getText()));
                         applyAccountsToSelectionBox();
                         endEditing();
-                        selection_box.setSelectedIndex(accounts.size());
+                        selection_box.setSelectedIndex(accounts.contents.size());
                     }
 
                     saveAccounts();
@@ -116,7 +128,7 @@ public class Gui extends JFrame {
                 if (!editing){
                     int answer = JOptionPane.showConfirmDialog(self, "Are you sure you want to DELETE" + System.lineSeparator() + "this account from the database?", "Delete Account", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                     if (answer == JOptionPane.YES_OPTION){
-                        accounts.remove(selection_box.getSelectedIndex() - 1);
+                        accounts.contents.remove(selection_box.getSelectedIndex() - 1);
                         applyAccountsToSelectionBox();
                         saveAccounts();
                     }
@@ -218,6 +230,28 @@ public class Gui extends JFrame {
             }
         });
 
+        show_account_password_box.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (show_account_password_box.isSelected()){
+                    password_field.setEchoChar((char) 0);
+                } else {
+                    password_field.setEchoChar('•');
+                }
+            }
+        });
+
+        show_options_password_box.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (show_options_password_box.isSelected()){
+                    options_password_field.setEchoChar((char) 0);
+                } else {
+                    options_password_field.setEchoChar('•');
+                }
+            }
+        });
+
 
         skin_box.addActionListener(new ActionListener() {
             @Override
@@ -234,6 +268,11 @@ public class Gui extends JFrame {
 
                 encrypt_save_box.setEnabled(use_password_box.isSelected());
                 options_password_field.setEnabled(use_password_box.isSelected());
+                show_options_password_box.setEnabled(use_password_box.isSelected());
+                if (!use_password_box.isSelected()) {
+                    show_options_password_box.setSelected(false);
+                    show_options_password_box.getActionListeners()[0].actionPerformed(new ActionEvent(new Object(), 0, ""));
+                }
 
             }
         });
@@ -249,6 +288,111 @@ public class Gui extends JFrame {
                 saveSettings();
             }
         });
+        deliver_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Socket socket = new Socket("" + ip_address_field.getText(), 7679);
+
+                            ObjectOutputStream dataOutputStream = new ObjectOutputStream(socket.getOutputStream());
+
+                            dataOutputStream.writeObject(accounts);
+                            dataOutputStream.flush();
+
+                            JOptionPane.showConfirmDialog(self, "Accounts send to \"" + ip_address_field.getText() + "\"!", "Da Account Manager", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE);
+
+                            dataOutputStream.close();
+                            socket.close();
+                        } catch (Exception e){
+                            JOptionPane.showConfirmDialog(self, "Could not connect to \"" + ip_address_field.getText() + "\"!", "Da Account Manager", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+                        }
+                    }
+                });
+                t.start();
+
+            }
+        });
+        receive_button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (receiving){
+                    endReceive();
+                    try {
+                        ser_socket.close();
+                    } catch (Exception e1){
+                        e1.printStackTrace();
+                    }
+                } else {
+                    receive_button.setText("Cancel");
+                    receiving = true;
+                    ip_address_field.setEnabled(false);
+                    deliver_button.setEnabled(false);
+
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                ser_socket = new ServerSocket(7679);
+                                ser_socket.setSoTimeout(30 * 1000);
+                                Socket socket = ser_socket.accept();
+
+                                ObjectInputStream dataInputStream = new ObjectInputStream(socket.getInputStream());
+
+                                AccountsCluster accs = (AccountsCluster) dataInputStream.readObject();
+
+                                if (JOptionPane.showConfirmDialog(self, "You received accounts from \"" + socket.getRemoteSocketAddress().toString().substring(1).split(":")[0] + "\".\nDo" +
+                                        " you want to add them to your database?", "Da Account Manager", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION){
+                                    for (Account it:accs.contents) {
+                                        if (!accounts.contains(it))
+                                            accounts.contents.add(it);
+                                        saveAccounts();
+                                        applyAccountsToSelectionBox();
+                                    }
+                                }
+                                endReceive();
+
+                                dataInputStream.close();
+                                socket.close();
+                                ser_socket.close();
+                            } catch (Exception e){
+                                if (receiving) {
+                                    JOptionPane.showConfirmDialog(self, "Receiving Timed out!", "Da Account Manager", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+                                    endReceive();
+                                }
+                            }
+                        }
+                    });
+                    t.start();
+                }
+            }
+        });
+
+        Timer timer = new Timer(20000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    DatagramSocket socket = new DatagramSocket();
+                    socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+                    String ip = socket.getLocalAddress().getHostAddress();
+                    if (ip.equals("::")) {
+                        ip_address_label.setText("IP Address: No Network Connection");
+                    } else {
+                        ip_address_label.setText("IP Address: " + ip);
+                    }
+                    socket.close();
+                } catch (UnknownHostException e1) {
+                    e1.printStackTrace();
+                } catch (SocketException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        timer.getActionListeners()[0].actionPerformed(new ActionEvent(new Object(), 0, ""));
+        timer.start();
+
         options_password_field.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e) {
                 saveSettings();
@@ -260,6 +404,8 @@ public class Gui extends JFrame {
                 saveSettings();
             }
         });
+
+
 
         setContentPane(panel);
         pack();
@@ -295,6 +441,13 @@ public class Gui extends JFrame {
         setVisible(true);
 
         pack();
+    }
+
+    void endReceive(){
+        receive_button.setText("Start Receiving");
+        receiving = false;
+        ip_address_field.setEnabled(true);
+        deliver_button.setEnabled(true);
     }
 
     void saveAccounts(){
@@ -373,22 +526,22 @@ public class Gui extends JFrame {
     void applyAccountsToSelectionBox(){
         selection_box.removeAllItems();
         selection_box.addItem("*");
-        for (int i = 0; i < accounts.size(); i++) {
+        for (int i = 0; i < accounts.contents.size(); i++) {
 
-            if (!accounts.get(i).getUsername().trim().equals("")) {
-                selection_box.addItem(accounts.get(i).getPlatform() + " - " + accounts.get(i).getUsername());
-            } else if (!accounts.get(i).getEmail().trim().equals("")) {
-                selection_box.addItem(accounts.get(i).getPlatform() + " - " + accounts.get(i).getEmail());
+            if (!accounts.contents.get(i).getUsername().trim().equals("")) {
+                selection_box.addItem(accounts.contents.get(i).getPlatform() + " - " + accounts.contents.get(i).getUsername());
+            } else if (!accounts.contents.get(i).getEmail().trim().equals("")) {
+                selection_box.addItem(accounts.contents.get(i).getPlatform() + " - " + accounts.contents.get(i).getEmail());
             } else {
                 int same_platform = 0;
 
                 for (int j = 0; j < selection_box.getItemCount() - 1; j++) {
-                    if (accounts.get(j).getPlatform().trim().toLowerCase().equals(accounts.get(i).getPlatform().trim().toLowerCase())){
+                    if (accounts.contents.get(j).getPlatform().trim().toLowerCase().equals(accounts.contents.get(i).getPlatform().trim().toLowerCase())){
                         same_platform++;
                     }
                 }
 
-                selection_box.addItem(accounts.get(i).getPlatform() + (same_platform > 0 ? " (" + same_platform + ")" : ""));
+                selection_box.addItem(accounts.contents.get(i).getPlatform() + (same_platform > 0 ? " (" + same_platform + ")" : ""));
             }
         }
     }
@@ -454,6 +607,7 @@ public class Gui extends JFrame {
                 use_password_box.setSelected(true);
                 encrypt_save_box.setEnabled(true);
                 options_password_field.setEnabled(true);
+                show_options_password_box.setEnabled(true);
                 options_password_field.setText(settings.getData("pass_p"));
             }
         }
@@ -469,6 +623,5 @@ public class Gui extends JFrame {
 
         SpinnerNumberModel model = new SpinnerNumberModel(16, 3, 255, 1);
         pasword_length_spinner = new JSpinner(model);
-
     }
 }

@@ -136,6 +136,7 @@ public class Main {
                 thread.start();
             }
         };
+        pass.setEchoChar('•');
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JLabel label = new JLabel("Enter your password:");

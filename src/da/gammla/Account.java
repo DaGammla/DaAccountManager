@@ -4,10 +4,10 @@ import java.io.Serializable;
 
 public class Account implements Serializable {
 
-    private String platform;
-    private String email;
-    private String username;
-    private String password;
+    public String platform;
+    public String email;
+    public String username;
+    public String password;
 
     public Account(String platform, String email, String username, String password){
         this.platform = platform;
@@ -46,6 +46,10 @@ public class Account implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean equals(Account acc){
+        return platform.equals(acc.platform) && email.equals(acc.email) && username.equals(acc.username) && password.equals(acc.password);
     }
 
 }

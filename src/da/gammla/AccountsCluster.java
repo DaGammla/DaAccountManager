@@ -1,32 +1,31 @@
 package da.gammla;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class AccountsCluster implements Serializable {
-    ArrayList<Account> contents = new ArrayList<Account>();
+    public ArrayList<Account> contents = new ArrayList<Account>();
 
     public AccountsCluster(){
 
     }
 
-    public void add(Account acc){
-        contents.add(acc);
+    public byte[] toByteArray() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bos);
+        out.writeObject(this);
+        out.flush();
+        return bos.toByteArray();
     }
 
-    public void set(int i, Account acc){
-        contents.set(i, acc);
-    }
-
-    public int size(){
-        return contents.size();
-    }
-
-    public Account get(int i){
-        return contents.get(i);
-    }
-
-    public void remove(int i){
-        contents.remove(i);
+    public boolean contains(Account acc){
+        for (Account test_acc:contents) {
+            if (test_acc.equals(acc))
+                return true;
+        }
+        return false;
     }
 }
