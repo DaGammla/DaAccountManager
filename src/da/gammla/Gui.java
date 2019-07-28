@@ -59,7 +59,7 @@ public class Gui extends JFrame {
 
     Gui self = this;
 
-    Gui(AccountsCluster accounts, AnchoredTable settings){
+    Gui(AccountsCluster accounts, AnchoredTable settings, String password){
         super("Da Account Manager");
         this.accounts = accounts;
         this.settings = settings;
@@ -71,9 +71,11 @@ public class Gui extends JFrame {
             skin_box.addItem(info.getName());
         }
 
+
         options_password_field.setEchoChar('•');
         password_field.setEchoChar('•');
         loadFromSettings();
+        options_password_field.setText(password);
 
         selection_box.addActionListener(new ActionListener() {
             @Override
@@ -608,7 +610,6 @@ public class Gui extends JFrame {
                 encrypt_save_box.setEnabled(true);
                 options_password_field.setEnabled(true);
                 show_options_password_box.setEnabled(true);
-                options_password_field.setText(settings.getData("pass_p"));
             }
         }
 

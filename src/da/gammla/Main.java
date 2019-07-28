@@ -36,6 +36,8 @@ public class Main {
             e.printStackTrace();
         }
 
+        String password = "";
+
 
         File file = new File(FileSystemView.getFileSystemView().getDefaultDirectory().getPath() + "/DaGammla/AccountManager/save.dams");
         if (file.exists()) {
@@ -49,6 +51,7 @@ public class Main {
 
                     if (answer.equals(settings.getData("pass_p"))) {
                         wrong_password = false;
+                        password = answer;
                     } else {
                         JFrame frame1 = optionPaneFrame();
                         if (JOptionPane.showConfirmDialog(frame1, "Wrong Password!", "Da Accounts Manager", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE) == JOptionPane.CLOSED_OPTION) {
@@ -86,7 +89,7 @@ public class Main {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-
+                        password = answer;
                         wrong_password = false;
                     } catch (Exception e) {
                         wrong_password = true;
@@ -100,7 +103,7 @@ public class Main {
             }
         }
 
-        Gui gui = new Gui(accounts, settings);
+        Gui gui = new Gui(accounts, settings, password);
     }
 
 
